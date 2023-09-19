@@ -1,0 +1,281 @@
+---
+title: "BellaBeat-How Can a Wellness Technology Company Play It Smart?"
+author: "Aleesha Munawar"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+I am a junior data analyst working on the marketing analyst team at Bellabeat, a high-tech manufacturer of health-focused products for women.As a data analyst I have been asked to focus on one of the Bellabeat product's and analyze smart device data to gain insight into how consumers are using their smart devices. The insights gained from my analysis will help guide marketing strategy for the company. I will present my findings and recommendation to Bellabeat executive team.
+
+### About the Company
+[Bellabeat](https://bellabeat.com/), a high-tech manufacturer of health-focused products for women. Although, a successful small company, they have the potential to become a larger player in the global smart device market. Urška Sršen and Sando Mur founded Bellabeat. Sršen used her background as an artist to develop beautifully designed technology that informs and inspires women around the world. Since it was founded in 2013, Bellabeat has grown rapidly and quickly positioned itself as a tech-driven wellness company for women.
+
+## 1. ASK Phase
+
+#### 1.1 Identify the business task
+Analyze smart device usage data in order to gain insight into how consumers use non-Bellabeat smart
+devices.
+
+#### 1.2 Key Stakeholders
+* Urška Sršen - Bellabeat’s cofounder and Chief Creative Officer
+
+* Sando Mur - Bellabeat’s cofounder; key member of the Bellabeat executive
+
+## 2. PREPARE Phase
+
+#### 2.1 Dataset Source
+The dataset used for this case study is Fitbit Fitness Tracker data. The kaggle dataset is made available through Mobius. 
+
+#### 2.2 Accessibility
+The dataset is open-source it means that we can use it for our analysis, modify it, copy it by citing the copyrights without asking for permission. 
+
+#### 2.3 About dataset
+This Kaggle dataset contains personal fitness tracker from thirty fitbit users. Thirty eligible Fitbit users consented to the submission of personal tracker data, including minute-level output for physical activity, heart rate, and sleep monitoring. It includes information about daily activity, steps, and heart rate that can be used to explore users’ habits.
+
+#### 2.4 Data organization
+The data contain 18 csv files each of which has separate quantitative data tracked by Fitbit. Each user has unique ID and compound multiple rows as the data is tracked by date and time.
+
+#### 2.5 Credibility
+The dataset contains limited data (30 users) thus we can encounter sampling bias. The other limitaion is that the dataset is not current.
+
+## 3. PROCESS Phase
+
+For the analysis I am using R in Rstudio, as this is a great tool for analysis and visualizations, so that I can share my results and recommendations to stakeholders later.
+
+#### 3.1 Setting up environment
+
+```{r Installing libraries}
+install.packages("tidyverse")
+install.packages("lubridate")
+install.packages("dplyr")
+install.packages("ggplot2")
+install.packages("tidyr")
+
+```
+```{r Loading Libraries}
+library(tidyverse)
+library(lubridate)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+```
+#### 3.2 Loading dataset
+
+```{r}
+daily_activity <- read_csv("Fitabase Data 4.12.16-5.12.16/dailyActivity_merged.csv")
+hourly_intensities <- read.csv("Fitabase Data 4.12.16-5.12.16/hourlyIntensities_merged.csv")
+daily_sleep <- read.csv("Fitabase Data 4.12.16-5.12.16/sleepDay_merged.csv")
+daily_calories <- read.csv("Fitabase Data 4.12.16-5.12.16/dailyCalories_merged.csv")
+weight <- read.csv("Fitabase Data 4.12.16-5.12.16/weightLogInfo_merged.csv")
+```
+#### 3.3 Exploring Dataset
+To get to know the dataset I am using head() function to see the first 6 rows of each file.
+
+```{r}
+head(daily_activity)
+head(hourly_intensities)
+head(daily_sleep)
+head(daily_calories)
+head(weight)
+```
+
+To see the columns of dataset and display some portion of data with respect to attribute I am using Glimpse() function.
+
+```{r}
+glimpse(daily_activity)
+glimpse(hourly_intensities)
+glimpse(daily_sleep)
+glimpse(daily_calories)
+glimpse(weight)
+```
+
+
+The below code is used to fix the format of date and time to make it consistent. 
+
+```{r}
+# intensities
+hourly_intensities$ActivityHour=as.POSIXct(hourly_intensities$ActivityHour, format="%m/%d/%Y %I:%M:%S %p", tz=Sys.timezone())
+hourly_intensities$time <- format(hourly_intensities$ActivityHour, format = "%H:%M:%S")
+hourly_intensities$date <- format(hourly_intensities$ActivityHour, format = "%m/%d/%y")
+# calories
+daily_calories$time <- format(daily_calories$ActivityHour, format = "%H:%M:%S")
+daily_calories$date <- format(daily_calories$ActivityHour, format = "%m/%d/%y")
+# activity
+daily_activity$ActivityDate=as.POSIXct(daily_activity$ActivityDate, format="%m/%d/%Y",tz=Sys.timezone())
+daily_activity$date <- format(daily_activity$ActivityDate, format = "%m/%d/%y")
+# sleep
+daily_sleep$SleepDay=as.POSIXct(daily_sleep$SleepDay, format="%m/%d/%Y %I:%M:%S %p", tz=Sys.timezone())
+daily_sleep$date <- format(daily_sleep$SleepDay, format = "%m/%d/%y")
+```
+
+```{r}
+glimpse(daily_activity)
+glimpse(hourly_intensities)
+glimpse(daily_sleep)
+glimpse(daily_calories)
+glimpse(weight)
+```
+
+The code below will tell the uniquely identified IDs.
+
+```{r}
+n_distinct(daily_activity$Id)
+n_distinct(hourly_intensities$Id)
+n_distinct(daily_calories$Id)
+n_distinct(daily_sleep$Id)
+n_distinct(weight$Id)
+```
+So, we can clearly notice that the number of unique ids in Weight dataset are not enough to perform further exploration. There will be margin of error if we use this data. So! I am going to skip this dataset and use the other four for analysis.
+
+
+#### 3.4 Summary of Datasets
+
+##### 3.4.1 Activity Dataset
+
+```{r}
+# activity
+daily_activity %>%  
+  select(TotalSteps,
+         TotalDistance,
+         SedentaryMinutes, Calories) %>%
+  summary()
+
+# explore number of active minutes per category
+daily_activity %>%
+  select(VeryActiveMinutes, FairlyActiveMinutes, LightlyActiveMinutes) %>%
+  summary()
+```
+##### 3.4.2 Calories Summary
+
+```{r}
+# calories
+daily_calories %>%
+  select(Calories) %>%
+  summary()
+```
+##### 3.4.3 Sleep Summary
+
+```{r}
+# sleep
+daily_sleep %>%
+  select(TotalSleepRecords, TotalMinutesAsleep, TotalTimeInBed) %>%
+  summary()
+```
+##### 3.4.4 Weight Summary
+
+```{r}
+# weight
+weight %>%
+  select(WeightKg, BMI) %>%
+  summary()
+```
+##### 3.4.5 Merging data to identify pattern
+
+```{r}
+merged_data <- merge(daily_sleep,daily_activity,by = c('Id','date'))
+head(merged_data)
+```
+
+
+```{r}
+glimpse(merged_data)
+```
+
+### Visualization 
+
+#### 4.1 Total step vs Calories relation
+
+```{r}
+ggplot(data=daily_activity, aes(x=TotalSteps, y=Calories)) + 
+  geom_point(color='red') + geom_smooth() + 
+  labs(title="Total Steps vs. Calories")
+```
+#### 4.2 Total minute of sleep vs Total time in bed relation
+
+```{r}
+ggplot(data=daily_sleep, aes(x=TotalMinutesAsleep, y=TotalTimeInBed)) + 
+  geom_point(color = 'purple')+ labs(title="Total Minutes Asleep vs. Total Time in Bed")
+```
+#### 4.3 Average Total Intensity vs Time
+
+```{r}
+intensity <- hourly_intensities %>%
+  group_by(time) %>%
+  drop_na() %>%
+  summarise(mean_total_int = mean(TotalIntensity))
+```
+
+```{r}
+ggplot(data=intensity, aes(x=time, y=mean_total_int)) + geom_histogram(stat = "identity", fill='#33cccc') +
+  theme(axis.text.x = element_text(angle = 90)) +
+  labs(title="Average Total Intensity vs. Time")
+```
+#### 4.4 Minute Asleep vs Sedentary Minutes
+
+```{r}
+ggplot(data=merged_data, aes(x=TotalMinutesAsleep, y=SedentaryMinutes)) + 
+geom_point(color='#663399') + geom_smooth() +
+  labs(title="Minutes Asleep vs. Sedentary Minutes")
+```
+#### 4.5 Lightly Active & Very Active minutes VS Calories
+
+```{r}
+install.packages("cowplot")
+library(cowplot)
+
+plot1 <- ggplot(data = merged_data,aes (x = LightlyActiveMinutes , y = Calories)) + 
+  geom_point(color = '#333333') + geom_smooth() +
+  labs(title = 'LightlyActiveMinutes vs Calories')
+plot2 <- ggplot(data = merged_data,aes (x = VeryActiveMinutes , y = Calories)) + 
+  geom_point(color = '#333355') + geom_smooth() +
+  labs(title = 'VeryActiveMinutes vs Calories')
+
+plot_grid(plot1, plot2, labels = "AUTO")
+```
+
+```{r}
+
+# Calculate the total minutes for each activity category
+daily_activity %>%
+  summarise(
+    VeryActive = sum(VeryActiveMinutes),
+    FairlyActive = sum(FairlyActiveMinutes),
+    LightlyActive = sum(LightlyActiveMinutes),
+    Sedentary = sum(SedentaryMinutes)
+  ) %>%
+  pivot_longer(cols = c(VeryActive, FairlyActive, LightlyActive, Sedentary), names_to = "category") %>%
+  mutate(
+    percentage = value / sum(value) * 100
+  ) %>%
+  ggplot(aes(x = category, y = percentage, fill = category)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("red", "yellow", "blue", "green3")) +
+  labs(
+    title = "Total percentages of minutes in a day",
+    subtitle = "How do people spend their day wearing the FitBit?"
+  )
+
+```
+
+
+### Recommendations
+
+After analyzing the data I have come up with some insights that will be useful insights that will be beneficial for Bellabeat marketing strategy.
+
+* They should introduce features such as notifying the user that they are being lightly active this will increase sedentary time.
+
+* Also if they want to improve their sleep pattern, the app should notify them about the peak sedentary time. 
+
+
+### Conclusion
+
+Using smart devices to monitor daily activity trend is itself quite a good idea, and Bellabeat has enhanced it more by making such beautiful wearable for women. The idea is unique and attractive. But the whole concept can be improved more if they introduce notification feature so women can get most benefit out of it and obviously their piece are very attractive that they can expand their users. Also they should introduced reward feature like health app in iPhone. Which is really cool to collect digital shields every time we complete daily step taking tasks. The best Product is their advance health tracker [Ivy-Health tracker](https://bellabeat.com/product/ivy/). It does not even seem like you are wearing some smart health tracker, this is so casual to wear on daily basis.
+
+### Wrapping-up
+
+This is my first project in R. The most beautiful thing about data analysis is that we can tell a whole story in most compelling way. The dataset was small I have tried my best to do as much as I can. I am wrapping up my project. I would really appreciate comments and highlighting mistakes or improvements that need to be done in this analysis.
